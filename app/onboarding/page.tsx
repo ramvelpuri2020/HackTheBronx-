@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, ArrowRight, ArrowLeft, Sparkles } from "lucide-react"
+import { Heart, ArrowRight, ArrowLeft, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
+import { getCurrentUser, getUserProfile, updateUserProfile } from "@/lib/auth"
 
 const questions = [
   {
@@ -95,25 +97,87 @@ const questions = [
 export default function OnboardingPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, any>>({})
-  const [userName, setUserName] = useState("")
+  const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const user = localStorage.getItem("liftloop_user")
-    if (!user) {
-      router.push("/auth")
-      return
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        router.push("/auth")
+        return
+      }
+
+      const profile = await getUserProfile(currentUser.id)
+      setUser(currentUser)
+      setUserProfile(profile)
+
+      // If onboarding is already completed, redirect to dashboard
+      if (profile.onboarding_completed) {
+        router.push("/dashboard")
+        return
+      }
+
+      // Load existing answers if any
+      const { data: existingAnswers } = await supabase
+        .from("onboarding_answers")
+        .select("*")
+        .eq("user_id", currentUser.id)
+
+      if (existingAnswers) {
+        const answersMap: Record<number, any> = {}
+        existingAnswers.forEach((answer) => {
+          answersMap[answer.question_id] = answer.answer
+        })
+        setAnswers(answersMap)
+      }
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
     }
-    const userData = JSON.parse(user)
-    setUserName(userData.name)
-  }, [router])
+  }
 
   const handleAnswer = (questionId: number, value: any) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
   }
 
-  const handleNext = () => {
+  const saveAnswer = async (questionId: number, answer: any) => {
+    if (!user) return
+
+    try {
+      // Upsert the answer
+      const { error } = await supabase.from("onboarding_answers").upsert(
+        {
+          user_id: user.id,
+          question_id: questionId,
+          answer: answer,
+        },
+        {
+          onConflict: "user_id,question_id",
+        },
+      )
+
+      if (error) throw error
+    } catch (error: any) {
+      console.error("Failed to save answer:", error)
+    }
+  }
+
+  const handleNext = async () => {
+    const currentAnswer = answers[questions[currentQuestion].id]
+    if (currentAnswer !== undefined) {
+      await saveAnswer(questions[currentQuestion].id, currentAnswer)
+    }
+
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1)
     } else {
@@ -122,15 +186,33 @@ export default function OnboardingPage() {
   }
 
   const handleComplete = async () => {
+    if (!user) return
+
     setIsSubmitting(true)
 
-    // Save answers and redirect to dashboard
-    localStorage.setItem("liftloop_answers", JSON.stringify(answers))
+    try {
+      // Save final answer if exists
+      const currentAnswer = answers[questions[currentQuestion].id]
+      if (currentAnswer !== undefined) {
+        await saveAnswer(questions[currentQuestion].id, currentAnswer)
+      }
 
-    // Add a small delay to show the completion state
-    setTimeout(() => {
+      // Mark onboarding as completed
+      await updateUserProfile(user.id, { onboarding_completed: true })
+
+      // Log activity
+      await supabase.from("user_activity").insert({
+        user_id: user.id,
+        action: "onboarding_completed",
+        details: { total_questions: questions.length },
+      })
+
+      // Redirect to dashboard
       router.push("/dashboard")
-    }, 2000)
+    } catch (error: any) {
+      setError(error.message)
+      setIsSubmitting(false)
+    }
   }
 
   const handlePrevious = () => {
@@ -152,13 +234,27 @@ export default function OnboardingPage() {
 
   const progress = ((currentQuestion + 1) / questions.length) * 100
 
-  if (!userName) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your onboarding...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold text-red-600 mb-2">Error</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => router.push("/auth")}>Return to Sign In</Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -170,9 +266,9 @@ export default function OnboardingPage() {
           <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-8 h-8 text-white animate-pulse" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Analyzing Your Needs...</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Processing Your Responses...</h2>
           <p className="text-gray-600 mb-6">
-            Our AI is processing your responses to find the perfect resources for your unique situation.
+            Our AI is analyzing your needs to find the perfect resources for your unique situation.
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div
@@ -199,7 +295,7 @@ export default function OnboardingPage() {
               LiftLoop
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Hi {userName}! 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Hi {userProfile?.name}! 👋</h1>
           <p className="text-gray-600">Let's understand your needs so we can help you better</p>
         </div>
 
