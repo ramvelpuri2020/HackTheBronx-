@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "title": "BronxWorks Food Pantry",
+    "category": "food",
+    "address": "60 E Tremont Ave, Bronx, NY 10453",
+    "phone": "718-731-3931",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["food pantry", "emergency food", "groceries", "families"],
+    "link": "https://bronxworks.org",
+    "description": "Free groceries and emergency food assistance for Bronx families. No documentation required. Serves over 1,000 families monthly."
+  },
+  {
+    "id": 2,
+    "title": "Concourse Plaza Multipurpose Center",
+    "category": "food",
+    "address": "400 E 161st St, Bronx, NY 10451",
+    "phone": "718-585-1344",
+    "hours": "Tue & Thu, 10am-2pm",
+    "tags": ["soup kitchen", "hot meals", "seniors", "families"],
+    "link": null,
+    "description": "Hot meals served twice weekly. Special programs for seniors and families with children. Community dining room available."
+  },
+  {
+    "id": 3,
+    "title": "Part of the Solution (POTS)",
+    "category": "food",
+    "address": "2759 Webster Ave, Bronx, NY 10458",
+    "phone": "718-220-4892",
+    "hours": "Mon-Fri, 11:30am-1pm",
+    "tags": ["soup kitchen", "hot meals", "job training", "social services"],
+    "link": "https://potsbronx.org",
+    "description": "Daily hot meals plus job training, housing assistance, and social services. Comprehensive support for individuals and families."
+  },
+  {
+    "id": 4,
+    "title": "BronxWorks Emergency Shelter",
+    "category": "housing",
+    "address": "1130 Grand Concourse, Bronx, NY 10456",
+    "phone": "718-731-3931",
+    "hours": "24/7",
+    "tags": ["emergency shelter", "families", "temporary housing", "case management"],
+    "link": "https://bronxworks.org",
+    "description": "Emergency shelter for families experiencing homelessness. Case management, job placement, and permanent housing assistance available."
+  },
+  {
+    "id": 5,
+    "title": "Bronx Legal Services",
+    "category": "housing",
+    "address": "349 E 149th St, Bronx, NY 10451",
+    "phone": "718-928-3700",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["legal aid", "eviction prevention", "tenant rights", "housing court"],
+    "link": "https://bronxlegalservices.org",
+    "description": "Free legal assistance for housing issues, eviction prevention, and tenant rights. Representation in housing court available."
+  },
+  {
+    "id": 6,
+    "title": "Urban Justice Center - Homelessness Outreach",
+    "category": "housing",
+    "address": "123 William St, New York, NY 10038",
+    "phone": "646-602-5600",
+    "hours": "Mon-Fri, 9am-6pm",
+    "tags": ["homeless services", "street outreach", "benefits", "mental health"],
+    "link": "https://urbanjustice.org",
+    "description": "Street outreach, benefits assistance, and mental health services for individuals experiencing homelessness in the Bronx."
+  },
+  {
+    "id": 7,
+    "title": "SoBRO Workforce Development",
+    "category": "jobs",
+    "address": "555 Bergen Ave, Bronx, NY 10455",
+    "phone": "718-292-3113",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["job training", "career services", "resume help", "interview prep"],
+    "link": "https://sobro.org",
+    "description": "Free job training programs, career counseling, resume writing, and interview preparation. Partnerships with local employers."
+  },
+  {
+    "id": 8,
+    "title": "Bronx Community College Workforce Development",
+    "category": "jobs",
+    "address": "2155 University Ave, Bronx, NY 10453",
+    "phone": "718-289-5151",
+    "hours": "Mon-Fri, 8am-6pm",
+    "tags": ["job training", "certification programs", "healthcare", "technology"],
+    "link": "https://bcc.cuny.edu",
+    "description": "Certificate programs in healthcare, technology, and skilled trades. Job placement assistance and continuing education opportunities."
+  },
+  {
+    "id": 9,
+    "title": "Goodwill NYNJ Career Center",
+    "category": "jobs",
+    "address": "240 E Kingsbridge Rd, Bronx, NY 10458",
+    "phone": "718-741-4404",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["job placement", "career counseling", "computer training", "retail"],
+    "link": "https://goodwillnynj.org",
+    "description": "Job placement services, computer training, and career counseling. Special programs for individuals with disabilities."
+  },
+  {
+    "id": 10,
+    "title": "Bronx Library Center",
+    "category": "education",
+    "address": "310 E Kingsbridge Rd, Bronx, NY 10458",
+    "phone": "718-579-4244",
+    "hours": "Mon-Thu 9am-8pm, Fri-Sat 10am-5pm",
+    "tags": ["library", "computer access", "wifi", "study space", "programs"],
+    "link": "https://nypl.org",
+    "description": "Free computer and internet access, study spaces, educational programs, and job search assistance. ESL and GED prep classes available."
+  },
+  {
+    "id": 11,
+    "title": "Bronx Educational Opportunity Center",
+    "category": "education",
+    "address": "1666 Bathgate Ave, Bronx, NY 10457",
+    "phone": "718-530-7000",
+    "hours": "Mon-Fri, 8am-9pm",
+    "tags": ["GED", "high school equivalency", "college prep", "career training"],
+    "link": "https://hostos.cuny.edu/beoc",
+    "description": "Free GED preparation, high school equivalency testing, college preparation, and career training programs for adults."
+  },
+  {
+    "id": 12,
+    "title": "Mott Haven Library",
+    "category": "education",
+    "address": "321 E 140th St, Bronx, NY 10454",
+    "phone": "718-665-4878",
+    "hours": "Mon-Wed 10am-8pm, Thu-Sat 10am-5pm",
+    "tags": ["library", "computer lab", "homework help", "children programs"],
+    "link": "https://nypl.org",
+    "description": "Computer lab, homework help for children, adult literacy programs, and free Wi-Fi. Community meeting spaces available."
+  },
+  {
+    "id": 13,
+    "title": "BronxCare Behavioral Health",
+    "category": "mental-health",
+    "address": "1276 Fulton Ave, Bronx, NY 10456",
+    "phone": "718-960-1234",
+    "hours": "Mon-Fri, 8am-5pm",
+    "tags": ["mental health", "counseling", "therapy", "crisis intervention"],
+    "link": "https://bronxcare.org",
+    "description": "Comprehensive mental health services including individual therapy, group counseling, and crisis intervention. Sliding scale fees available."
+  },
+  {
+    "id": 14,
+    "title": "Samaritan Village Counseling Center",
+    "category": "mental-health",
+    "address": "2090 Seventh Ave, New York, NY 10027",
+    "phone": "212-870-2600",
+    "hours": "Mon-Fri, 9am-6pm",
+    "tags": ["substance abuse", "addiction counseling", "mental health", "support groups"],
+    "link": "https://samaritanvillage.org",
+    "description": "Substance abuse treatment, addiction counseling, mental health services, and support groups. Outpatient and intensive programs available."
+  },
+  {
+    "id": 15,
+    "title": "Bronx-Lebanon Hospital Mental Health",
+    "category": "mental-health",
+    "address": "1650 Selwyn Ave, Bronx, NY 10457",
+    "phone": "718-518-5000",
+    "hours": "24/7 Emergency, Mon-Fri 9am-5pm Outpatient",
+    "tags": ["mental health", "emergency psychiatric", "outpatient", "crisis"],
+    "link": "https://bronxleb.org",
+    "description": "24/7 emergency psychiatric services and outpatient mental health programs. Crisis intervention and stabilization services."
+  },
+  {
+    "id": 16,
+    "title": "St. Augustine Food Pantry",
+    "category": "food",
+    "address": "1183 Franklin Ave, Bronx, NY 10456",
+    "phone": "718-993-0015",
+    "hours": "Wed & Sat, 10am-12pm",
+    "tags": ["food pantry", "church", "emergency food", "community"],
+    "link": null,
+    "description": "Community food pantry operated by St. Augustine Church. Emergency food packages for families and individuals in need."
+  },
+  {
+    "id": 17,
+    "title": "Women's Housing and Economic Development Corporation",
+    "category": "housing",
+    "address": "50 E 168th St, Bronx, NY 10452",
+    "phone": "718-839-1100",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["affordable housing", "women", "economic development", "homeownership"],
+    "link": "https://whedco.org",
+    "description": "Affordable housing development, homeownership counseling, and economic development programs specifically for women and families."
+  },
+  {
+    "id": 18,
+    "title": "Bronx Works Career Center",
+    "category": "jobs",
+    "address": "1130 Grand Concourse, Bronx, NY 10456",
+    "phone": "718-731-3931",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["career services", "job placement", "skills training", "employment"],
+    "link": "https://bronxworks.org",
+    "description": "Comprehensive career services including job placement, skills training, and employment support for Bronx residents."
+  },
+  {
+    "id": 19,
+    "title": "Hostos Community College Continuing Education",
+    "category": "education",
+    "address": "500 Grand Concourse, Bronx, NY 10451",
+    "phone": "718-518-4444",
+    "hours": "Mon-Fri, 8am-10pm",
+    "tags": ["community college", "continuing education", "ESL", "workforce training"],
+    "link": "https://hostos.cuny.edu",
+    "description": "Continuing education programs, ESL classes, workforce training, and college preparation courses for adult learners."
+  },
+  {
+    "id": 20,
+    "title": "Bronx Mental Health Society",
+    "category": "mental-health",
+    "address": "1000 Grand Concourse, Bronx, NY 10451",
+    "phone": "718-299-2000",
+    "hours": "Mon-Fri, 9am-5pm",
+    "tags": ["mental health", "community support", "peer counseling", "advocacy"],
+    "link": "https://bronxmhs.org",
+    "description": "Community-based mental health services, peer support programs, and advocacy for individuals with mental health challenges."
+  }
+]
