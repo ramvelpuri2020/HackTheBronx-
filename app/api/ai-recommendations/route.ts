@@ -18,10 +18,12 @@ export async function POST(request: NextRequest) {
     ])
 
     if (profileResult.error) {
+      console.error("Failed to fetch user profile:", profileResult.error)
       throw new Error("Failed to fetch user profile")
     }
 
     if (answersResult.error) {
+      console.error("Failed to fetch user answers:", answersResult.error)
       throw new Error("Failed to fetch user answers")
     }
 
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
     const { data: resources, error: resourcesError } = await supabase.from("resources").select("*").eq("verified", true)
 
     if (resourcesError) {
+      console.error("Failed to fetch resources:", resourcesError)
       throw new Error("Failed to fetch resources")
     }
 
@@ -205,6 +208,7 @@ IMPORTANT CONSIDERATIONS:
     })
 
     if (!response.ok) {
+      console.error(`AI service error: ${response.status}`)
       throw new Error(`AI service error: ${response.status}`)
     }
 

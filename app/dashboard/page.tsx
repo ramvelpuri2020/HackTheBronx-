@@ -75,44 +75,35 @@ export default function DashboardPage() {
 
   const checkUserData = async () => {
     try {
-      console.log("🔐 Checking user authentication...")
       setAiStatus("Checking authentication...")
 
       // First check if user is authenticated
       const user = await getCurrentUser()
       if (!user) {
-        console.log("❌ No authenticated user found, redirecting to auth")
         router.push("/auth")
         return
       }
 
       setCurrentUser(user)
-      console.log("✅ User authenticated:", user.id)
       setAiStatus("Loading user profile...")
 
       // Get user profile
       const profile = await getUserProfile(user.id)
       if (!profile) {
-        console.log("❌ No user profile found, redirecting to auth")
         router.push("/auth")
         return
       }
 
-      console.log("✅ User profile loaded:", profile.name)
-
       // Check if onboarding is completed
       if (!profile.onboarding_completed) {
-        console.log("⚠️ Onboarding not completed, checking for answers...")
         // Check if they have answers in the database
         const { data: answers } = await supabase.from("onboarding_answers").select("*").eq("user_id", user.id)
 
         if (!answers || answers.length === 0) {
-          console.log("❌ No onboarding answers found, redirecting to onboarding")
           router.push("/onboarding")
           return
         }
 
-        console.log("✅ Found answers, marking onboarding as complete")
         // If they have answers but onboarding not marked complete, update it
         await updateUserProfile(user.id, { onboarding_completed: true })
       }
@@ -135,17 +126,13 @@ export default function DashboardPage() {
         })
         setUserAnswers(answersMap)
 
-        console.log("✅ User answers loaded:", Object.keys(answersMap).length, "questions")
-
         // Get AI-powered recommendations
         loadAIRecommendations({ id: user.id, name: profile.name, email: profile.email }, answersMap)
       } else {
-        console.log("❌ No answers found, redirecting to onboarding")
         // No answers found, redirect to onboarding
         router.push("/onboarding")
       }
     } catch (error) {
-      console.error("❌ Error loading user data:", error)
       setAiStatus("Error loading data, redirecting to onboarding...")
       setAiError("Failed to load user data")
 
@@ -169,7 +156,6 @@ export default function DashboardPage() {
         userId: userData.id,
       }
 
-      console.log("🤖 Starting AI recommendation process...")
       setAiStatus("Loading resources from database...")
       setLoadingProgress(20)
 
@@ -181,13 +167,11 @@ export default function DashboardPage() {
 
       let resources = []
       if (resourcesError || !dbResources || dbResources.length === 0) {
-        console.log("⚠️ No resources in database, using default resources...")
         setAiStatus("Setting up resource database...")
 
         // Use default resources if database is empty
         resources = await getDefaultResources()
       } else {
-        console.log("✅ Using resources from database:", dbResources.length)
         resources = dbResources
       }
 
@@ -210,7 +194,6 @@ export default function DashboardPage() {
       setLoadingProgress(100)
       setAiStatus("Finalizing your personalized dashboard...")
 
-      console.log("✅ AI analysis complete!")
       setAiRecommendations(recommendations)
       setOpportunities(opportunityAnalysis)
 
@@ -229,9 +212,7 @@ export default function DashboardPage() {
 
       setAllResources(recommendedResources)
       setFilteredResources(recommendedResources)
-      console.log("🎯 Dashboard ready with", recommendedResources.length, "personalized recommendations")
     } catch (error: any) {
-      console.error("❌ Failed to load AI recommendations:", error)
       setAiError(error.message || "Failed to get AI recommendations")
       setAiStatus("AI analysis failed")
 

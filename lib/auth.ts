@@ -26,7 +26,8 @@ export const signUp = async (email: string, password: string, name: string) => {
       })
 
       if (profileError) {
-        console.error("Failed to create user profile:", profileError)
+        // Generic error message for production
+        console.error("Failed to create user profile.")
         // Don't throw error here, let the user continue
       }
 
@@ -38,9 +39,9 @@ export const signUp = async (email: string, password: string, name: string) => {
           action: "profile_created",
           details: { source: "signup" },
         })
-        .catch((err) => console.error("Failed to log activity:", err))
+        .catch((err) => console.error("Failed to log activity."))
     } catch (err) {
-      console.error("Profile creation error:", err)
+      console.error("Profile creation failed.")
     }
   }
 
@@ -86,7 +87,7 @@ export const getUserProfile = async (userId: string) => {
   const { data, error } = await supabase.from("user_profiles").select("*").eq("id", userId).maybeSingle()
 
   if (error) {
-    console.error("Error fetching user profile:", error)
+    console.error("Error fetching user profile.")
     throw error
   }
 
@@ -109,7 +110,7 @@ export const getUserProfile = async (userId: string) => {
         .single()
 
       if (createError) {
-        console.error("Error creating user profile:", createError)
+        console.error("Error creating user profile.")
         throw createError
       }
       return createdProfile

@@ -149,7 +149,6 @@ export default function OnboardingPage() {
         setAnswers(answersMap)
       }
     } catch (error: any) {
-      console.error("Auth check error:", error)
       setError(error.message)
     } finally {
       setIsLoading(false)
@@ -178,11 +177,9 @@ export default function OnboardingPage() {
       )
 
       if (error) {
-        console.error("Save answer error:", error)
         throw error
       }
     } catch (error: any) {
-      console.error("Failed to save answer:", error)
       throw error
     }
   }
@@ -195,7 +192,6 @@ export default function OnboardingPage() {
       try {
         await saveAnswer(questions[currentQuestion].id, currentAnswer)
       } catch (error) {
-        console.error("Failed to save answer:", error)
         // Continue anyway - don't block the user
       }
     }
@@ -219,7 +215,6 @@ export default function OnboardingPage() {
         try {
           await saveAnswer(questions[currentQuestion].id, currentAnswer)
         } catch (error) {
-          console.error("Failed to save final answer:", error)
           // Continue anyway
         }
       }
@@ -235,14 +230,12 @@ export default function OnboardingPage() {
           details: { total_questions: questions.length },
         })
       } catch (error) {
-        console.error("Failed to log activity:", error)
         // Continue anyway
       }
 
       // Redirect to dashboard
       router.push("/dashboard")
     } catch (error: any) {
-      console.error("Completion error:", error)
       setError(error.message)
       setIsSubmitting(false)
     }
