@@ -1,8 +1,8 @@
 # Hack The Bronx 🌟
 
-## What is Hack The Bronx?
+## What is Lift Loop?
 
-Hack The Bronx is a community-driven web platform that helps connect people in the Bronx with local resources, events, and opportunities. Our goal is to make it easier for Bronx residents to:
+Lift Loop is a community-driven web platform that helps connect people in the Bronx with local resources, events, and opportunities. Our goal is to make it easier for Bronx residents to:
 - Find and join community events
 - Access educational resources
 - Connect with local organizations
