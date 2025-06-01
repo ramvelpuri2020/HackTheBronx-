@@ -33,8 +33,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { resources } from "@/data/resources"
 import { getAIPersonalizedRecommendations, getAIOpportunityAnalysis } from "@/utils/aiPersonalization"
+import { getCurrentUser, getUserProfile, updateUserProfile } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState("")
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   const [isLoadingAI, setIsLoadingAI] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [isClient, setIsClient] = useState(false)
+  const [aiStatus, setAiStatus] = useState<string>("Initializing...")
   const router = useRouter()
 
   useEffect(() => {
@@ -54,33 +56,91 @@ export default function DashboardPage() {
     checkUserData()
   }, [])
 
-  const checkUserData = () => {
+  const checkUserData = async () => {
     try {
-      const user = localStorage.getItem("liftloop_user")
-      const answers = localStorage.getItem("liftloop_answers")
+      console.log("🔐 Checking user authentication...")
+      setAiStatus("Checking authentication...")
 
-      if (!user || !answers) {
+      // First check if user is authenticated
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        console.log("❌ No authenticated user found, redirecting to auth")
         router.push("/auth")
         return
       }
 
-      const userData = JSON.parse(user)
-      const answersData = JSON.parse(answers)
+      console.log("✅ User authenticated:", currentUser.id)
+      setAiStatus("Loading user profile...")
 
-      setUserName(userData.name)
-      setUserAnswers(answersData)
+      // Get user profile
+      const profile = await getUserProfile(currentUser.id)
+      if (!profile) {
+        console.log("❌ No user profile found, redirecting to auth")
+        router.push("/auth")
+        return
+      }
 
-      // Get AI-powered recommendations
-      loadAIRecommendations(userData, answersData)
+      console.log("✅ User profile loaded:", profile.name)
+
+      // Check if onboarding is completed
+      if (!profile.onboarding_completed) {
+        console.log("⚠️ Onboarding not completed, checking for answers...")
+        // Check if they have answers in the database
+        const { data: answers } = await supabase.from("onboarding_answers").select("*").eq("user_id", currentUser.id)
+
+        if (!answers || answers.length === 0) {
+          console.log("❌ No onboarding answers found, redirecting to onboarding")
+          router.push("/onboarding")
+          return
+        }
+
+        console.log("✅ Found answers, marking onboarding as complete")
+        // If they have answers but onboarding not marked complete, update it
+        await updateUserProfile(currentUser.id, { onboarding_completed: true })
+      }
+
+      // Set user data
+      setUserName(profile.name)
+      setAiStatus("Loading your responses...")
+
+      // Get answers from database
+      const { data: answersData } = await supabase
+        .from("onboarding_answers")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("question_id")
+
+      if (answersData && answersData.length > 0) {
+        const answersMap: Record<number, any> = {}
+        answersData.forEach((answer) => {
+          answersMap[answer.question_id] = answer.answer
+        })
+        setUserAnswers(answersMap)
+
+        console.log("✅ User answers loaded:", Object.keys(answersMap).length, "questions")
+
+        // Get AI-powered recommendations
+        loadAIRecommendations({ id: currentUser.id, name: profile.name, email: profile.email }, answersMap)
+      } else {
+        console.log("❌ No answers found, redirecting to onboarding")
+        // No answers found, redirect to onboarding
+        router.push("/onboarding")
+      }
     } catch (error) {
-      console.error("Error loading user data:", error)
-      router.push("/auth")
+      console.error("❌ Error loading user data:", error)
+      setAiStatus("Error loading data, redirecting to onboarding...")
+
+      // No fallback to localStorage - redirect to onboarding instead
+      setTimeout(() => {
+        router.push("/onboarding")
+      }, 2000)
     }
   }
 
   const loadAIRecommendations = async (userData: any, answersData: any) => {
     setIsLoadingAI(true)
     setLoadingProgress(0)
+    setAiStatus("Preparing your profile for AI analysis...")
 
     try {
       const userProfile = {
@@ -88,6 +148,9 @@ export default function DashboardPage() {
         name: userData.name,
         email: userData.email,
       }
+
+      console.log("🤖 Starting AI recommendation process...")
+      setAiStatus("Connecting to Hack Club AI...")
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
@@ -98,7 +161,28 @@ export default function DashboardPage() {
           }
           return prev + 10
         })
-      }, 200)
+      }, 300)
+
+      setAiStatus("Analyzing your needs with AI...")
+
+      // Get resources from database first
+      const { data: dbResources, error: resourcesError } = await supabase
+        .from("resources")
+        .select("*")
+        .eq("verified", true)
+
+      let resources = []
+      if (resourcesError || !dbResources || dbResources.length === 0) {
+        console.log("⚠️ Using fallback resources from static data")
+        // Fallback to static resources if database is empty
+        const { resources: staticResources } = await import("@/data/resources")
+        resources = staticResources
+      } else {
+        console.log("✅ Using resources from database:", dbResources.length)
+        resources = dbResources
+      }
+
+      setAiStatus("Getting AI recommendations...")
 
       // Get AI recommendations and opportunities in parallel
       const [recommendations, opportunityAnalysis] = await Promise.all([
@@ -108,7 +192,9 @@ export default function DashboardPage() {
 
       clearInterval(progressInterval)
       setLoadingProgress(100)
+      setAiStatus("Finalizing your personalized dashboard...")
 
+      console.log("✅ AI analysis complete!")
       setAiRecommendations(recommendations)
       setOpportunities(opportunityAnalysis)
 
@@ -126,14 +212,18 @@ export default function DashboardPage() {
         .sort((a, b) => (b.aiRecommendation?.relevanceScore || 0) - (a.aiRecommendation?.relevanceScore || 0))
 
       setFilteredResources(recommendedResources)
+      console.log("🎯 Dashboard ready with", recommendedResources.length, "personalized recommendations")
     } catch (error) {
-      console.error("Failed to load AI recommendations:", error)
+      console.error("❌ Failed to load AI recommendations:", error)
+      setAiStatus("AI unavailable, using smart matching...")
+
       // Fallback to basic filtering
-      setFilteredResources(resources.slice(0, 8))
+      const { resources: fallbackResources } = await import("@/data/resources")
+      setFilteredResources(fallbackResources.slice(0, 8))
     } finally {
       setTimeout(() => {
         setIsLoadingAI(false)
-      }, 500)
+      }, 1000)
     }
   }
 
@@ -143,23 +233,37 @@ export default function DashboardPage() {
         (resource) =>
           resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          resource.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
+          resource.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
       )
       setFilteredResources(filtered)
     } else if (aiRecommendations && !searchQuery.trim()) {
       // Reset to AI recommendations when search is cleared
       const recommendedResourceIds = aiRecommendations.recommendations.map((r: any) => r.resourceId)
-      const recommendedResources = resources
-        .filter((resource) => recommendedResourceIds.includes(resource.id))
-        .map((resource) => {
-          const aiRec = aiRecommendations.recommendations.find((r: any) => r.resourceId === resource.id)
-          return {
-            ...resource,
-            aiRecommendation: aiRec,
+
+      // Get resources from database or current filtered resources
+      const { data: dbResources } = supabase
+        .from("resources")
+        .select("*")
+        .eq("verified", true)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            const recommendedResources = data
+              .filter((resource: any) => recommendedResourceIds.includes(resource.id))
+              .map((resource: any) => {
+                const aiRec = aiRecommendations.recommendations.find((r: any) => r.resourceId === resource.id)
+                return {
+                  ...resource,
+                  aiRecommendation: aiRec,
+                }
+              })
+              .sort(
+                (a: any, b: any) =>
+                  (b.aiRecommendation?.relevanceScore || 0) - (a.aiRecommendation?.relevanceScore || 0),
+              )
+
+            setFilteredResources(recommendedResources)
           }
         })
-        .sort((a, b) => (b.aiRecommendation?.relevanceScore || 0) - (a.aiRecommendation?.relevanceScore || 0))
-      setFilteredResources(recommendedResources)
     }
   }, [searchQuery, aiRecommendations])
 
@@ -227,9 +331,13 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  localStorage.clear()
-                  router.push("/")
+                onClick={async () => {
+                  try {
+                    await supabase.auth.signOut()
+                    router.push("/")
+                  } catch (error) {
+                    console.error("Sign out error:", error)
+                  }
                 }}
               >
                 Sign Out
@@ -246,10 +354,8 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Analyzing Your Needs...</h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Our AI is processing your responses to find the perfect resources for your unique situation.
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Analysis in Progress</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">{aiStatus}</p>
             <div className="w-full max-w-md mx-auto bg-gray-200 rounded-full h-3 mb-4">
               <div
                 className="bg-gradient-to-r from-blue-600 to-green-600 h-3 rounded-full transition-all duration-300"
@@ -257,6 +363,9 @@ export default function DashboardPage() {
               ></div>
             </div>
             <p className="text-sm text-gray-500">{loadingProgress}% complete</p>
+            <div className="mt-4 text-xs text-gray-400">
+              <p>🔗 Using Hack Club AI API for personalized recommendations</p>
+            </div>
           </div>
         )}
 
@@ -276,6 +385,10 @@ export default function DashboardPage() {
                 <p className="text-gray-600">
                   Based on your unique situation, we've found {filteredResources.length} highly relevant resources.
                 </p>
+                <div className="mt-2 text-sm text-green-600 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Powered by Hack Club AI API
+                </div>
               </div>
 
               {/* AI Insights Alert */}
@@ -479,6 +592,10 @@ export default function DashboardPage() {
                 <p className="text-gray-600">
                   Discover programs and benefits you might not know about, tailored to your situation.
                 </p>
+                <div className="mt-2 text-sm text-green-600 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  AI-powered opportunity analysis
+                </div>
               </div>
 
               {opportunities && (
@@ -566,6 +683,10 @@ export default function DashboardPage() {
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Insights & Next Steps</h1>
                 <p className="text-gray-600">AI-powered analysis of your situation with actionable recommendations.</p>
+                <div className="mt-2 text-sm text-green-600 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Personalized insights from Hack Club AI
+                </div>
               </div>
 
               {aiRecommendations && (

@@ -123,16 +123,23 @@ export default function OnboardingPage() {
       setUserProfile(profile)
 
       // If onboarding is already completed, redirect to dashboard
-      if (profile.onboarding_completed) {
+      if (profile?.onboarding_completed) {
         router.push("/dashboard")
         return
       }
 
-      // Load existing answers if any
+      // Check if user has completed onboarding by checking if they have answers
       const { data: existingAnswers } = await supabase
         .from("onboarding_answers")
         .select("*")
         .eq("user_id", currentUser.id)
+
+      // If user has answered all questions, mark as completed and redirect
+      if (existingAnswers && existingAnswers.length >= questions.length) {
+        await updateUserProfile(currentUser.id, { onboarding_completed: true })
+        router.push("/dashboard")
+        return
+      }
 
       if (existingAnswers && existingAnswers.length > 0) {
         const answersMap: Record<number, any> = {}
@@ -231,17 +238,6 @@ export default function OnboardingPage() {
         console.error("Failed to log activity:", error)
         // Continue anyway
       }
-
-      // Store answers in localStorage as backup
-      localStorage.setItem(
-        "liftloop_user",
-        JSON.stringify({
-          id: user.id,
-          name: userProfile.name,
-          email: userProfile.email,
-        }),
-      )
-      localStorage.setItem("liftloop_answers", JSON.stringify(answers))
 
       // Redirect to dashboard
       router.push("/dashboard")

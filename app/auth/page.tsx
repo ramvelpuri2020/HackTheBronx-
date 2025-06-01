@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signUp, signIn } from "@/lib/auth"
+import { signUp, signIn, getUserProfile } from "@/lib/auth"
 
 export default function AuthPage() {
   const [isClient, setIsClient] = useState(false)
@@ -83,8 +83,18 @@ export default function AuthPage() {
     setMessage(null)
 
     try {
-      await signIn(signInData.email, signInData.password)
-      router.push("/onboarding")
+      const { user } = await signIn(signInData.email, signInData.password)
+
+      if (user) {
+        // Check if user has completed onboarding
+        const profile = await getUserProfile(user.id)
+
+        if (profile.onboarding_completed) {
+          router.push("/dashboard")
+        } else {
+          router.push("/onboarding")
+        }
+      }
     } catch (error: any) {
       if (error.message.includes("Email not confirmed")) {
         setMessage({
