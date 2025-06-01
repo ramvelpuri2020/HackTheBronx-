@@ -46,26 +46,37 @@ export default function DashboardPage() {
   const [showMajorSupportForm, setShowMajorSupportForm] = useState(false)
   const [isLoadingAI, setIsLoadingAI] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
+  const [isClient, setIsClient] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    const user = localStorage.getItem("liftloop_user")
-    const answers = localStorage.getItem("liftloop_answers")
+    setIsClient(true)
+    checkUserData()
+  }, [])
 
-    if (!user || !answers) {
+  const checkUserData = () => {
+    try {
+      const user = localStorage.getItem("liftloop_user")
+      const answers = localStorage.getItem("liftloop_answers")
+
+      if (!user || !answers) {
+        router.push("/auth")
+        return
+      }
+
+      const userData = JSON.parse(user)
+      const answersData = JSON.parse(answers)
+
+      setUserName(userData.name)
+      setUserAnswers(answersData)
+
+      // Get AI-powered recommendations
+      loadAIRecommendations(userData, answersData)
+    } catch (error) {
+      console.error("Error loading user data:", error)
       router.push("/auth")
-      return
     }
-
-    const userData = JSON.parse(user)
-    const answersData = JSON.parse(answers)
-
-    setUserName(userData.name)
-    setUserAnswers(answersData)
-
-    // Get AI-powered recommendations
-    loadAIRecommendations(userData, answersData)
-  }, [router])
+  }
 
   const loadAIRecommendations = async (userData: any, answersData: any) => {
     setIsLoadingAI(true)
@@ -176,6 +187,10 @@ export default function DashboardPage() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  if (!isClient) {
+    return null
   }
 
   if (!userName) {

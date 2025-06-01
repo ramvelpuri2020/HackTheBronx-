@@ -102,9 +102,11 @@ export default function OnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isClient, setIsClient] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
+    setIsClient(true)
     checkAuth()
   }, [])
 
@@ -132,7 +134,7 @@ export default function OnboardingPage() {
         .select("*")
         .eq("user_id", currentUser.id)
 
-      if (existingAnswers) {
+      if (existingAnswers && existingAnswers.length > 0) {
         const answersMap: Record<number, any> = {}
         existingAnswers.forEach((answer) => {
           answersMap[answer.question_id] = answer.answer
@@ -140,6 +142,7 @@ export default function OnboardingPage() {
         setAnswers(answersMap)
       }
     } catch (error: any) {
+      console.error("Auth check error:", error)
       setError(error.message)
     } finally {
       setIsLoading(false)
@@ -154,28 +157,40 @@ export default function OnboardingPage() {
     if (!user) return
 
     try {
-      // Upsert the answer
+      // Use upsert with the proper conflict resolution
       const { error } = await supabase.from("onboarding_answers").upsert(
         {
           user_id: user.id,
           question_id: questionId,
           answer: answer,
+          updated_at: new Date().toISOString(),
         },
         {
           onConflict: "user_id,question_id",
         },
       )
 
-      if (error) throw error
+      if (error) {
+        console.error("Save answer error:", error)
+        throw error
+      }
     } catch (error: any) {
       console.error("Failed to save answer:", error)
+      throw error
     }
   }
 
   const handleNext = async () => {
     const currentAnswer = answers[questions[currentQuestion].id]
-    if (currentAnswer !== undefined) {
-      await saveAnswer(questions[currentQuestion].id, currentAnswer)
+
+    // Save current answer if it exists
+    if (currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== "") {
+      try {
+        await saveAnswer(questions[currentQuestion].id, currentAnswer)
+      } catch (error) {
+        console.error("Failed to save answer:", error)
+        // Continue anyway - don't block the user
+      }
     }
 
     if (currentQuestion < questions.length - 1) {
@@ -193,23 +208,45 @@ export default function OnboardingPage() {
     try {
       // Save final answer if exists
       const currentAnswer = answers[questions[currentQuestion].id]
-      if (currentAnswer !== undefined) {
-        await saveAnswer(questions[currentQuestion].id, currentAnswer)
+      if (currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== "") {
+        try {
+          await saveAnswer(questions[currentQuestion].id, currentAnswer)
+        } catch (error) {
+          console.error("Failed to save final answer:", error)
+          // Continue anyway
+        }
       }
 
       // Mark onboarding as completed
       await updateUserProfile(user.id, { onboarding_completed: true })
 
       // Log activity
-      await supabase.from("user_activity").insert({
-        user_id: user.id,
-        action: "onboarding_completed",
-        details: { total_questions: questions.length },
-      })
+      try {
+        await supabase.from("user_activity").insert({
+          user_id: user.id,
+          action: "onboarding_completed",
+          details: { total_questions: questions.length },
+        })
+      } catch (error) {
+        console.error("Failed to log activity:", error)
+        // Continue anyway
+      }
+
+      // Store answers in localStorage as backup
+      localStorage.setItem(
+        "liftloop_user",
+        JSON.stringify({
+          id: user.id,
+          name: userProfile.name,
+          email: userProfile.email,
+        }),
+      )
+      localStorage.setItem("liftloop_answers", JSON.stringify(answers))
 
       // Redirect to dashboard
       router.push("/dashboard")
     } catch (error: any) {
+      console.error("Completion error:", error)
       setError(error.message)
       setIsSubmitting(false)
     }
@@ -224,7 +261,7 @@ export default function OnboardingPage() {
   const isAnswered = () => {
     const answer = answers[questions[currentQuestion].id]
     if (questions[currentQuestion].type === "checkbox") {
-      return answer && answer.length > 0
+      return answer && Array.isArray(answer) && answer.length > 0
     }
     if (questions[currentQuestion].type === "textarea") {
       return true // Optional question
@@ -233,6 +270,10 @@ export default function OnboardingPage() {
   }
 
   const progress = ((currentQuestion + 1) / questions.length) * 100
+
+  if (!isClient) {
+    return null
+  }
 
   if (isLoading) {
     return (

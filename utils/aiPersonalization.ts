@@ -126,12 +126,14 @@ IMPORTANT CONSIDERATIONS:
 - Consider both short-term relief and long-term stability
 `
 
-    const response = await fetch("https://ai.hackclub.com/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: "Bearer sk-b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8",
       },
       body: JSON.stringify({
+        model: "deepseek-chat",
         messages: [
           {
             role: "user",
@@ -304,12 +306,14 @@ Respond in JSON format:
 }
 `
 
-    const response = await fetch("https://ai.hackclub.com/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: "Bearer sk-b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8",
       },
       body: JSON.stringify({
+        model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.8,
         max_tokens: 1500,

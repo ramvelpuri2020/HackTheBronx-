@@ -4,8 +4,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function LandingPage() {
+  const [isClient, setIsClient] = useState(false)
+
+  // This ensures hydration issues are avoided
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return null // Return nothing during SSR to avoid hydration mismatch
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* Header */}

@@ -1,13 +1,32 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Hardcoded Supabase credentials for v0 environment
+const supabaseUrl = "https://mxfkubexfqmrqudqusib.supabase.co"
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Zmt1YmV4ZnFtcnF1ZHF1c2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MTUwNDMsImV4cCI6MjA2NDI5MTA0M30.xyGPK0fDI5lQGVXeLBdkCkdeOjXJbHD1CfkbxU2wnNk"
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create a single supabase client for interacting with your database
+let supabaseInstance: ReturnType<typeof createClient> | null = null
+
+export function getSupabase() {
+  if (supabaseInstance) return supabaseInstance
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase URL or Anon Key is missing")
+    throw new Error("Supabase configuration is missing")
+  }
+
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+  return supabaseInstance
+}
+
+// Export for convenience
+export const supabase = getSupabase()
 
 // Server-side client for edge functions
 export const createServerClient = () => {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  // For v0 environment, use the same credentials
+  return createClient(supabaseUrl, supabaseAnonKey)
 }
 
 // Database types
