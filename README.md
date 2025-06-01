@@ -31,7 +31,7 @@ Lift Loop is a community-driven web platform that helps connect people in the Br
 
 2. Clone the project to your computer:
    ```sh
-   git clone https://github.com/yourusername/hack_the_bronx.git
+   git clone https://github.com/ramvelpuri2020/HackTheBronx-
    cd hack_the_bronx
    ```
 
@@ -39,15 +39,6 @@ Lift Loop is a community-driven web platform that helps connect people in the Br
    ```sh
    npm install
    ```
-
-4. Set up your environment:
-   - Create a new file called `.env` in the main folder
-   - Add these settings (replace with your actual values):
-   ```
-   MONGODB_URI=your_database_connection_string
-   API_KEY=your_api_key
-   ```
-
 5. Start the app:
    ```sh
    npm run dev
