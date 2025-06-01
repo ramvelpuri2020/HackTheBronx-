@@ -36,11 +36,6 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Link href="/official-login">
-                <Button variant="outline" size="sm">
-                  Official Portal
-                </Button>
-              </Link>
               <Link href="/auth">
                 <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700">
                   Get Started
@@ -55,15 +50,15 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <Badge className="mb-6 bg-blue-100 text-blue-800 border-blue-200">🏠 Serving the Bronx Community</Badge>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
             Find Help in the Bronx
-            <span className="block bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent animate-pulse">
               Instantly
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
             LiftLoop connects Bronx residents with personalized local resources for food, housing, jobs, education, and
-            mental health support. Get matched with the right help based on your specific needs.
+            mental health support. Get matched with the right help based on your unique needs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/auth">
@@ -96,7 +91,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center border-0 shadow-lg">
+            <Card className="text-center border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
               <CardHeader>
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-blue-600" />
@@ -111,7 +106,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            <Card className="text-center border-0 shadow-lg">
+            <Card className="text-center border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
               <CardHeader>
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-8 h-8 text-green-600" />
@@ -126,7 +121,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            <Card className="text-center border-0 shadow-lg">
+            <Card className="text-center border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
               <CardHeader>
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Shield className="w-8 h-8 text-purple-600" />
@@ -253,46 +248,9 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Heart className="w-6 h-6" />
-                <span className="text-xl font-bold">LiftLoop</span>
-              </div>
-              <p className="text-gray-400 text-sm">Connecting Bronx residents with the support they need to thrive.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-3">Resources</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>Food Assistance</li>
-                <li>Housing Support</li>
-                <li>Job Training</li>
-                <li>Education</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-3">Support</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>How It Works</li>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Contact Us</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-3">Emergency</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>Emergency: 911</li>
-                <li>City Services: 311</li>
-                <li>Crisis Support: 988</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 LiftLoop. Made with ❤️ for the Bronx community.</p>
-          </div>
+      <footer className="bg-gray-900 text-white py-8 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-gray-400">&copy; 2025 LiftLoop. Made with ❤️ for the Bronx community.</p>
         </div>
       </footer>
     </div>

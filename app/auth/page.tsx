@@ -161,23 +161,23 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-cyan-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" />
+          <Link href="/" className="inline-flex items-center space-x-3 mb-6 group">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+              <Heart className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
               LiftLoop
             </span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to LiftLoop</h1>
-          <p className="text-gray-600">Create your account to get personalized resource recommendations</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Welcome to LiftLoop</h1>
+          <p className="text-gray-600 text-lg">Create your account to get personalized resource recommendations</p>
         </div>
 
-        <Card className="shadow-xl border-0">
+        <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/90">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-xl">Get Started</CardTitle>
             <CardDescription>Join thousands of Bronx residents finding the help they need</CardDescription>
@@ -272,11 +272,12 @@ export default function AuthPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start space-x-2 pt-2">
+                  <div className="flex items-start space-x-3 pt-2">
                     <Checkbox
                       id="terms"
                       checked={agreedToTerms}
                       onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                      className="w-4 h-4 mt-1"
                     />
                     <Label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed">
                       I agree to the{" "}
@@ -372,13 +373,13 @@ export default function AuthPage() {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-2 text-blue-800">
                 <Shield className="w-4 h-4" />
                 <span className="text-sm font-medium">Your Privacy Matters</span>
               </div>
               <p className="text-xs text-blue-700 mt-1">
-                Your information is encrypted and secure. We never share your data with third parties.
+                Your information is secure and private. We're here to help you find the resources you need.
               </p>
             </div>
           </CardContent>

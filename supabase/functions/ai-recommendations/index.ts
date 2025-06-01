@@ -1,33 +1,23 @@
-import { supabase } from "@/lib/supabase"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-interface UserProfile {
-  answers: Record<number, any>
-  name: string
-  email: string
-  userId?: string
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
-interface AIRecommendation {
-  resourceId: number
-  relevanceScore: number
-  reasoning: string
-  urgencyLevel: "low" | "medium" | "high" | "critical"
-  actionItems: string[]
-  opportunities: string[]
-}
-
-export async function getAIPersonalizedRecommendations(
-  userProfile: UserProfile,
-  resources: any[],
-): Promise<{
-  recommendations: AIRecommendation[]
-  insights: string[]
-  nextSteps: string[]
-  opportunities: string[]
-}> {
-  console.log("🤖 Analyzing your responses for personalized recommendations...")
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
+  }
 
   try {
+    const { userProfile, resources } = await req.json()
+
+    console.log("🤖 Starting AI personalization with Hack Club API...")
+    console.log("📊 User profile:", { name: userProfile.name, answersCount: Object.keys(userProfile.answers).length })
+
     // Create comprehensive prompt
     const livingSituation = userProfile.answers[1] || "Not specified"
     const helpNeeded = Array.isArray(userProfile.answers[2]) ? userProfile.answers[2].join(", ") : "Not specified"
@@ -131,10 +121,10 @@ IMPORTANT CONSIDERATIONS:
 - Consider both short-term relief and long-term stability
 `
 
-    console.log("🚀 Processing your information...")
+    console.log("🚀 Calling Hack Club AI API...")
     const startTime = Date.now()
 
-    // Call Hack Club AI API directly
+    // Call Hack Club AI API
     const response = await fetch("https://ai.hackclub.com/chat/completions", {
       method: "POST",
       headers: {
@@ -153,15 +143,15 @@ IMPORTANT CONSIDERATIONS:
     })
 
     const responseTime = Date.now() - startTime
-    console.log(`⏱️ Analysis response time: ${responseTime}ms`)
+    console.log(`⏱️ Hack Club API response time: ${responseTime}ms`)
 
     if (!response.ok) {
-      console.error("❌ Analysis error:", response.status, response.statusText)
-      throw new Error(`Analysis service error: ${response.status} - ${response.statusText}`)
+      console.error("❌ Hack Club API error:", response.status, response.statusText)
+      throw new Error(`AI service error: ${response.status}`)
     }
 
     const data = await response.json()
-    console.log("✅ Analysis complete:", {
+    console.log("✅ Hack Club API response received:", {
       hasChoices: !!data.choices,
       choicesLength: data.choices?.length,
       hasMessage: !!data.choices?.[0]?.message,
@@ -182,12 +172,6 @@ IMPORTANT CONSIDERATIONS:
       // Clean the response in case there's extra text
       const jsonStart = aiResponse.indexOf("{")
       const jsonEnd = aiResponse.lastIndexOf("}") + 1
-
-      if (jsonStart === -1 || jsonEnd === 0) {
-        console.error("❌ No JSON found in AI response")
-        throw new Error("No valid JSON found in AI response")
-      }
-
       const jsonString = aiResponse.slice(jsonStart, jsonEnd)
 
       console.log("🔍 Parsing AI JSON response...")
@@ -206,126 +190,40 @@ IMPORTANT CONSIDERATIONS:
         opportunitiesCount: parsed.opportunities?.length || 0,
       })
 
-      // Save AI recommendations to database if userId is provided
-      if (userProfile.userId) {
-        try {
-          const { error: saveError } = await supabase.from("ai_recommendations").upsert({
-            user_id: userProfile.userId,
-            recommendations: parsed,
-            insights: { insights: parsed.insights },
-            opportunities: parsed.opportunities,
-          })
+      // Save to database
+      const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "")
 
-          if (saveError) {
-            console.error("Failed to save recommendations:", saveError)
-          } else {
-            console.log("✅ AI recommendations saved to database")
-          }
-        } catch (saveErr) {
-          console.error("Error saving recommendations:", saveErr)
-        }
+      // Save AI recommendations to database
+      const { error: saveError } = await supabase.from("ai_recommendations").upsert({
+        user_id: userProfile.userId,
+        recommendations: parsed,
+        insights: { insights: parsed.insights },
+        opportunities: parsed.opportunities,
+      })
+
+      if (saveError) {
+        console.error("Failed to save recommendations:", saveError)
       }
 
-      return parsed
+      return new Response(JSON.stringify(parsed), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      })
     } catch (parseError) {
       console.error("❌ Failed to parse AI response:", parseError)
       console.error("📄 Raw AI response:", aiResponse.substring(0, 500) + "...")
       throw new Error("Failed to parse AI response")
     }
-  } catch (error: any) {
-    console.error("❌ Failed to get personalized recommendations:", error)
-    throw new Error(`AI recommendations failed: ${error.message}`)
-  }
-}
-
-export async function getAIOpportunityAnalysis(userProfile: UserProfile): Promise<{
-  hiddenOpportunities: string[]
-  qualifications: string[]
-  strategicAdvice: string[]
-  longTermPath: string[]
-}> {
-  console.log("🔍 Making direct API call to Hack Club AI for opportunity analysis...")
-
-  try {
-    const prompt = `
-As a Bronx community resource expert, analyze this user's profile for hidden opportunities and strategic advice.
-
-USER SITUATION:
-Living Situation: ${userProfile.answers[1] || "Not specified"}
-Help Needed: ${JSON.stringify(userProfile.answers[2] || [])}
-Urgency: ${userProfile.answers[3] || "Not specified"}
-Special Circumstances: ${JSON.stringify(userProfile.answers[4] || [])}
-Preferred Area: ${userProfile.answers[5] || "Not specified"}
-Additional Details: ${userProfile.answers[6] || "None"}
-
-Identify:
-1. Hidden opportunities they might not know about (grants, programs, benefits)
-2. What they likely qualify for based on their situation
-3. Strategic advice for their specific circumstances
-4. Long-term pathway recommendations
-
-Focus on Bronx-specific programs, NYC benefits, federal programs, and community opportunities.
-
-Respond in JSON format:
-{
-  "hiddenOpportunities": ["Specific programs or opportunities"],
-  "qualifications": ["What they likely qualify for"],
-  "strategicAdvice": ["Strategic recommendations"],
-  "longTermPath": ["Steps for long-term improvement"]
-}
-`
-
-    console.log("🚀 Calling Hack Club AI API for opportunity analysis...")
-    const startTime = Date.now()
-
-    const response = await fetch("https://ai.hackclub.com/chat/completions", {
-      method: "POST",
+  } catch (error) {
+    console.error("❌ Edge function error:", error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
       headers: {
+        ...corsHeaders,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.8,
-        max_tokens: 1500,
-      }),
     })
-
-    const responseTime = Date.now() - startTime
-    console.log(`⏱️ Opportunity analysis API response time: ${responseTime}ms`)
-
-    if (!response.ok) {
-      console.error("❌ Hack Club API error for opportunities:", response.status, response.statusText)
-      throw new Error(`AI service error: ${response.status} - ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log("✅ Opportunity analysis response received")
-
-    // Check if the response has the expected structure
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error("❌ Unexpected AI response structure for opportunities:", data)
-      throw new Error("Invalid AI response structure")
-    }
-
-    const aiResponse = data.choices[0].message.content
-
-    // Parse JSON response
-    const jsonStart = aiResponse.indexOf("{")
-    const jsonEnd = aiResponse.lastIndexOf("}") + 1
-
-    if (jsonStart === -1 || jsonEnd === 0) {
-      console.error("❌ No JSON found in opportunity analysis response")
-      throw new Error("No valid JSON found in opportunity analysis response")
-    }
-
-    const jsonString = aiResponse.slice(jsonStart, jsonEnd)
-
-    const parsed = JSON.parse(jsonString)
-    console.log("🎯 Opportunity analysis parsed successfully")
-
-    return parsed
-  } catch (error: any) {
-    console.error("❌ Failed to get opportunity analysis:", error)
-    throw new Error(`Opportunity analysis failed: ${error.message}`)
   }
-}
+})

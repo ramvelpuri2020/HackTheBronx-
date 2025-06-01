@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import {
   Heart,
@@ -10,26 +8,19 @@ import {
   Phone,
   Clock,
   ExternalLink,
-  Plus,
   Lightbulb,
   Target,
   TrendingUp,
   Sparkles,
   Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -44,11 +35,13 @@ export default function DashboardPage() {
   const [opportunities, setOpportunities] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filteredResources, setFilteredResources] = useState<any[]>([])
-  const [showMajorSupportForm, setShowMajorSupportForm] = useState(false)
+  const [allResources, setAllResources] = useState<any[]>([])
   const [isLoadingAI, setIsLoadingAI] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [isClient, setIsClient] = useState(false)
   const [aiStatus, setAiStatus] = useState<string>("Initializing...")
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -56,24 +49,49 @@ export default function DashboardPage() {
     checkUserData()
   }, [])
 
+  // Filter resources based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredResources(allResources)
+      return
+    }
+
+    const filtered = allResources.filter((resource) => {
+      const searchableText = [
+        resource.title,
+        resource.description,
+        resource.category,
+        ...(resource.tags || []),
+        resource.address,
+      ]
+        .join(" ")
+        .toLowerCase()
+
+      return searchableText.includes(searchQuery.toLowerCase())
+    })
+
+    setFilteredResources(filtered)
+  }, [searchQuery, allResources])
+
   const checkUserData = async () => {
     try {
       console.log("🔐 Checking user authentication...")
       setAiStatus("Checking authentication...")
 
       // First check if user is authenticated
-      const currentUser = await getCurrentUser()
-      if (!currentUser) {
+      const user = await getCurrentUser()
+      if (!user) {
         console.log("❌ No authenticated user found, redirecting to auth")
         router.push("/auth")
         return
       }
 
-      console.log("✅ User authenticated:", currentUser.id)
+      setCurrentUser(user)
+      console.log("✅ User authenticated:", user.id)
       setAiStatus("Loading user profile...")
 
       // Get user profile
-      const profile = await getUserProfile(currentUser.id)
+      const profile = await getUserProfile(user.id)
       if (!profile) {
         console.log("❌ No user profile found, redirecting to auth")
         router.push("/auth")
@@ -86,7 +104,7 @@ export default function DashboardPage() {
       if (!profile.onboarding_completed) {
         console.log("⚠️ Onboarding not completed, checking for answers...")
         // Check if they have answers in the database
-        const { data: answers } = await supabase.from("onboarding_answers").select("*").eq("user_id", currentUser.id)
+        const { data: answers } = await supabase.from("onboarding_answers").select("*").eq("user_id", user.id)
 
         if (!answers || answers.length === 0) {
           console.log("❌ No onboarding answers found, redirecting to onboarding")
@@ -96,7 +114,7 @@ export default function DashboardPage() {
 
         console.log("✅ Found answers, marking onboarding as complete")
         // If they have answers but onboarding not marked complete, update it
-        await updateUserProfile(currentUser.id, { onboarding_completed: true })
+        await updateUserProfile(user.id, { onboarding_completed: true })
       }
 
       // Set user data
@@ -107,7 +125,7 @@ export default function DashboardPage() {
       const { data: answersData } = await supabase
         .from("onboarding_answers")
         .select("*")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", user.id)
         .order("question_id")
 
       if (answersData && answersData.length > 0) {
@@ -120,7 +138,7 @@ export default function DashboardPage() {
         console.log("✅ User answers loaded:", Object.keys(answersMap).length, "questions")
 
         // Get AI-powered recommendations
-        loadAIRecommendations({ id: currentUser.id, name: profile.name, email: profile.email }, answersMap)
+        loadAIRecommendations({ id: user.id, name: profile.name, email: profile.email }, answersMap)
       } else {
         console.log("❌ No answers found, redirecting to onboarding")
         // No answers found, redirect to onboarding
@@ -129,8 +147,8 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("❌ Error loading user data:", error)
       setAiStatus("Error loading data, redirecting to onboarding...")
+      setAiError("Failed to load user data")
 
-      // No fallback to localStorage - redirect to onboarding instead
       setTimeout(() => {
         router.push("/onboarding")
       }, 2000)
@@ -140,6 +158,7 @@ export default function DashboardPage() {
   const loadAIRecommendations = async (userData: any, answersData: any) => {
     setIsLoadingAI(true)
     setLoadingProgress(0)
+    setAiError(null)
     setAiStatus("Preparing your profile for AI analysis...")
 
     try {
@@ -147,23 +166,12 @@ export default function DashboardPage() {
         answers: answersData,
         name: userData.name,
         email: userData.email,
+        userId: userData.id,
       }
 
       console.log("🤖 Starting AI recommendation process...")
-      setAiStatus("Connecting to Hack Club AI...")
-
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 300)
-
-      setAiStatus("Analyzing your needs with AI...")
+      setAiStatus("Loading resources from database...")
+      setLoadingProgress(20)
 
       // Get resources from database first
       const { data: dbResources, error: resourcesError } = await supabase
@@ -173,24 +181,32 @@ export default function DashboardPage() {
 
       let resources = []
       if (resourcesError || !dbResources || dbResources.length === 0) {
-        console.log("⚠️ Using fallback resources from static data")
-        // Fallback to static resources if database is empty
-        const { resources: staticResources } = await import("@/data/resources")
-        resources = staticResources
+        console.log("⚠️ No resources in database, using default resources...")
+        setAiStatus("Setting up resource database...")
+
+        // Use default resources if database is empty
+        resources = await getDefaultResources()
       } else {
         console.log("✅ Using resources from database:", dbResources.length)
         resources = dbResources
       }
 
-      setAiStatus("Getting AI recommendations...")
+      if (resources.length === 0) {
+        throw new Error("No resources available")
+      }
 
-      // Get AI recommendations and opportunities in parallel
-      const [recommendations, opportunityAnalysis] = await Promise.all([
-        getAIPersonalizedRecommendations(userProfile, resources),
-        getAIOpportunityAnalysis(userProfile),
-      ])
+      setLoadingProgress(40)
+      setAiStatus("Analyzing your responses...")
 
-      clearInterval(progressInterval)
+      // Get AI recommendations using direct API calls
+      const recommendations = await getAIPersonalizedRecommendations(userProfile, resources)
+
+      setLoadingProgress(70)
+      setAiStatus("Getting opportunity analysis...")
+
+      // Get opportunity analysis
+      const opportunityAnalysis = await getAIOpportunityAnalysis(userProfile)
+
       setLoadingProgress(100)
       setAiStatus("Finalizing your personalized dashboard...")
 
@@ -211,15 +227,22 @@ export default function DashboardPage() {
         })
         .sort((a, b) => (b.aiRecommendation?.relevanceScore || 0) - (a.aiRecommendation?.relevanceScore || 0))
 
+      setAllResources(recommendedResources)
       setFilteredResources(recommendedResources)
       console.log("🎯 Dashboard ready with", recommendedResources.length, "personalized recommendations")
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Failed to load AI recommendations:", error)
-      setAiStatus("AI unavailable, using smart matching...")
+      setAiError(error.message || "Failed to get AI recommendations")
+      setAiStatus("AI analysis failed")
 
-      // Fallback to basic filtering
-      const { resources: fallbackResources } = await import("@/data/resources")
-      setFilteredResources(fallbackResources.slice(0, 8))
+      // Show fallback resources
+      try {
+        const fallbackResources = await getDefaultResources()
+        setAllResources(fallbackResources)
+        setFilteredResources(fallbackResources)
+      } catch (fallbackError) {
+        console.error("❌ Failed to load fallback resources:", fallbackError)
+      }
     } finally {
       setTimeout(() => {
         setIsLoadingAI(false)
@@ -227,45 +250,77 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    if (searchQuery.trim() && filteredResources.length > 0) {
-      const filtered = filteredResources.filter(
-        (resource) =>
-          resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          resource.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
-      )
-      setFilteredResources(filtered)
-    } else if (aiRecommendations && !searchQuery.trim()) {
-      // Reset to AI recommendations when search is cleared
-      const recommendedResourceIds = aiRecommendations.recommendations.map((r: any) => r.resourceId)
+  const getDefaultResources = async () => {
+    // Return hardcoded resources as fallback
+    return [
+      {
+        id: 1,
+        title: "BronxWorks Food Pantry",
+        category: "food",
+        address: "60 E Tremont Ave, Bronx, NY 10453",
+        phone: "718-731-3931",
+        hours: "Mon-Fri, 9am-5pm",
+        tags: ["food pantry", "emergency food", "groceries", "families"],
+        link: "https://bronxworks.org",
+        description:
+          "Free groceries and emergency food assistance for Bronx families. No documentation required. Serves over 1,000 families monthly.",
+      },
+      {
+        id: 2,
+        title: "BronxWorks Emergency Shelter",
+        category: "housing",
+        address: "1130 Grand Concourse, Bronx, NY 10456",
+        phone: "718-731-3931",
+        hours: "24/7",
+        tags: ["emergency shelter", "families", "temporary housing", "case management"],
+        link: "https://bronxworks.org",
+        description:
+          "Emergency shelter for families experiencing homelessness. Case management, job placement, and permanent housing assistance available.",
+      },
+      {
+        id: 3,
+        title: "SoBRO Workforce Development",
+        category: "jobs",
+        address: "555 Bergen Ave, Bronx, NY 10455",
+        phone: "718-292-3113",
+        hours: "Mon-Fri, 9am-5pm",
+        tags: ["job training", "career services", "resume help", "interview prep"],
+        link: "https://sobro.org",
+        description:
+          "Free job training programs, career counseling, resume writing, and interview preparation. Partnerships with local employers.",
+      },
+      {
+        id: 4,
+        title: "Bronx Library Center",
+        category: "education",
+        address: "310 E Kingsbridge Rd, Bronx, NY 10458",
+        phone: "718-579-4244",
+        hours: "Mon-Thu 9am-8pm, Fri-Sat 10am-5pm",
+        tags: ["library", "computer access", "wifi", "study space", "programs"],
+        link: "https://nypl.org",
+        description:
+          "Free computer and internet access, study spaces, educational programs, and job search assistance. ESL and GED prep classes available.",
+      },
+      {
+        id: 5,
+        title: "BronxCare Behavioral Health",
+        category: "mental-health",
+        address: "1276 Fulton Ave, Bronx, NY 10456",
+        phone: "718-960-1234",
+        hours: "Mon-Fri, 8am-5pm",
+        tags: ["mental health", "counseling", "therapy", "crisis intervention"],
+        link: "https://bronxcare.org",
+        description:
+          "Comprehensive mental health services including individual therapy, group counseling, and crisis intervention. Sliding scale fees available.",
+      },
+    ]
+  }
 
-      // Get resources from database or current filtered resources
-      const { data: dbResources } = supabase
-        .from("resources")
-        .select("*")
-        .eq("verified", true)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            const recommendedResources = data
-              .filter((resource: any) => recommendedResourceIds.includes(resource.id))
-              .map((resource: any) => {
-                const aiRec = aiRecommendations.recommendations.find((r: any) => r.resourceId === resource.id)
-                return {
-                  ...resource,
-                  aiRecommendation: aiRec,
-                }
-              })
-              .sort(
-                (a: any, b: any) =>
-                  (b.aiRecommendation?.relevanceScore || 0) - (a.aiRecommendation?.relevanceScore || 0),
-              )
-
-            setFilteredResources(recommendedResources)
-          }
-        })
+  const retryAIAnalysis = () => {
+    if (currentUser && userAnswers) {
+      loadAIRecommendations({ id: currentUser.id, name: userName, email: currentUser.email }, userAnswers)
     }
-  }, [searchQuery, aiRecommendations])
+  }
 
   const getCategoryEmoji = (category: string) => {
     const emojis: Record<string, string> = {
@@ -274,6 +329,7 @@ export default function DashboardPage() {
       jobs: "💼",
       education: "📚",
       "mental-health": "🧠",
+      legal: "⚖️",
     }
     return emojis[category] || "📍"
   }
@@ -314,7 +370,7 @@ export default function DashboardPage() {
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/auth" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center">
                 <Heart className="w-4 h-4 text-white" />
               </div>
@@ -323,7 +379,7 @@ export default function DashboardPage() {
               </span>
               <Badge variant="outline" className="ml-2">
                 <Sparkles className="w-3 h-3 mr-1" />
-                AI-Powered
+                Smart Matching
               </Badge>
             </Link>
             <div className="flex items-center space-x-3">
@@ -334,7 +390,7 @@ export default function DashboardPage() {
                 onClick={async () => {
                   try {
                     await supabase.auth.signOut()
-                    router.push("/")
+                    router.push("/auth")
                   } catch (error) {
                     console.error("Sign out error:", error)
                   }
@@ -354,7 +410,7 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Analysis in Progress</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">🤖 Smart Analysis in Progress</h2>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">{aiStatus}</p>
             <div className="w-full max-w-md mx-auto bg-gray-200 rounded-full h-3 mb-4">
               <div
@@ -364,7 +420,25 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-gray-500">{loadingProgress}% complete</p>
             <div className="mt-4 text-xs text-gray-400">
-              <p>🔗 Using Hack Club AI API for personalized recommendations</p>
+              <p>🔗 Analyzing your unique situation</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!isLoadingAI && aiError && (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">AI Analysis Failed</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">{aiError}</p>
+            <div className="space-y-3">
+              <Button onClick={retryAIAnalysis} className="bg-blue-600 hover:bg-blue-700">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry AI Analysis
+              </Button>
+              <p className="text-sm text-gray-500">Don't worry - we've loaded some basic resources for you below</p>
             </div>
           </div>
         )}
@@ -373,22 +447,34 @@ export default function DashboardPage() {
         {!isLoadingAI && (
           <Tabs defaultValue="recommendations" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="recommendations">AI Recommendations</TabsTrigger>
-              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-              <TabsTrigger value="insights">Personal Insights</TabsTrigger>
+              <TabsTrigger value="recommendations">
+                {aiRecommendations ? "AI Recommendations" : "Available Resources"}
+              </TabsTrigger>
+              <TabsTrigger value="opportunities" disabled={!opportunities}>
+                Opportunities
+              </TabsTrigger>
+              <TabsTrigger value="insights" disabled={!aiRecommendations}>
+                Personal Insights
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="recommendations" className="space-y-6">
               {/* Welcome Section */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Your AI-Powered Recommendations</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {aiRecommendations ? "Your AI-Powered Recommendations" : "Available Resources"}
+                </h1>
                 <p className="text-gray-600">
-                  Based on your unique situation, we've found {filteredResources.length} highly relevant resources.
+                  {aiRecommendations
+                    ? `Based on your unique situation, we've found ${filteredResources.length} highly relevant resources.`
+                    : `Here are ${filteredResources.length} resources available in the Bronx.`}
                 </p>
-                <div className="mt-2 text-sm text-green-600 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  Powered by Hack Club AI API
-                </div>
+                {aiRecommendations && (
+                  <div className="mt-2 text-sm text-green-600 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Powered by smart matching
+                  </div>
+                )}
               </div>
 
               {/* AI Insights Alert */}
@@ -401,45 +487,13 @@ export default function DashboardPage() {
                 </Alert>
               )}
 
-              {/* Major Support CTA */}
-              <Card className="mb-6 border-2 border-dashed border-blue-300 bg-blue-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-blue-900 mb-2">Need Major Support?</h3>
-                      <p className="text-blue-800 text-sm">
-                        Facing eviction, can't pay rent, or need intensive case management? Request personalized
-                        assistance from our support team.
-                      </p>
-                    </div>
-                    <Dialog open={showMajorSupportForm} onOpenChange={setShowMajorSupportForm}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Request Major Support
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Request Major Support</DialogTitle>
-                          <DialogDescription>
-                            Our support team will review your case and connect you with specialized assistance.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <MajorSupportForm onClose={() => setShowMajorSupportForm(false)} userAnswers={userAnswers} />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Search */}
               <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search your AI-recommended resources..."
+                    placeholder="Search resources..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -447,14 +501,20 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* AI-Recommended Resources */}
+              {/* Resources */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-900">
                     {filteredResources.length > 0
-                      ? `${filteredResources.length} AI-Recommended Resource${filteredResources.length === 1 ? "" : "s"}`
+                      ? `${filteredResources.length} Resource${filteredResources.length === 1 ? "" : "s"}`
                       : "No resources found"}
                   </h2>
+                  {aiError && (
+                    <Button onClick={retryAIAnalysis} variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry AI Analysis
+                    </Button>
+                  )}
                 </div>
 
                 {filteredResources.map((resource) => (
@@ -577,28 +637,30 @@ export default function DashboardPage() {
                     <CardContent className="text-center py-8">
                       <div className="text-4xl mb-2">🔍</div>
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
-                      <p className="text-gray-600 mb-4">
-                        Try different search terms or request major support for personalized assistance.
-                      </p>
+                      <p className="text-gray-600 mb-4">Try different search terms or clear your search.</p>
+                      <Button onClick={() => setSearchQuery("")} variant="outline">
+                        Clear Search
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="opportunities" className="space-y-6">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Hidden Opportunities</h1>
-                <p className="text-gray-600">
-                  Discover programs and benefits you might not know about, tailored to your situation.
-                </p>
-                <div className="mt-2 text-sm text-green-600 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  AI-powered opportunity analysis
+            {/* Opportunities Tab */}
+            {opportunities && (
+              <TabsContent value="opportunities" className="space-y-6">
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Hidden Opportunities</h1>
+                  <p className="text-gray-600">
+                    Discover programs and benefits you might not know about, tailored to your situation.
+                  </p>
+                  <div className="mt-2 text-sm text-green-600 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI-powered opportunity analysis
+                  </div>
                 </div>
-              </div>
 
-              {opportunities && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card className="border-l-4 border-l-green-500">
                     <CardHeader>
@@ -668,7 +730,7 @@ export default function DashboardPage() {
                       <ul className="space-y-2">
                         {opportunities.longTermPath?.map((step: string, index: number) => (
                           <li key={index} className="flex items-start space-x-2">
-                            <span className="text-orange-600 font-bold">{index + 1}.</span>
+                            <span className="text-orange-600 mt-1">•</span>
                             <span className="text-sm">{step}</span>
                           </li>
                         ))}
@@ -676,20 +738,21 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
                 </div>
-              )}
-            </TabsContent>
+              </TabsContent>
+            )}
 
-            <TabsContent value="insights" className="space-y-6">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Insights & Next Steps</h1>
-                <p className="text-gray-600">AI-powered analysis of your situation with actionable recommendations.</p>
-                <div className="mt-2 text-sm text-green-600 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  Personalized insights from Hack Club AI
+            {/* Insights Tab */}
+            {aiRecommendations && (
+              <TabsContent value="insights" className="space-y-6">
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Insights & Next Steps</h1>
+                  <p className="text-gray-600">Smart analysis of your situation with actionable recommendations.</p>
+                  <div className="mt-2 text-sm text-green-600 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Personalized insights from smart matching
+                  </div>
                 </div>
-              </div>
 
-              {aiRecommendations && (
                 <div className="space-y-6">
                   {/* Personal Insights */}
                   <Card>
@@ -751,110 +814,11 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
                 </div>
-              )}
-            </TabsContent>
+              </TabsContent>
+            )}
           </Tabs>
         )}
       </main>
     </div>
-  )
-}
-
-function MajorSupportForm({ onClose, userAnswers }: { onClose: () => void; userAnswers: any }) {
-  const [formData, setFormData] = useState({
-    urgency: "",
-    situation: "",
-    assistance: "",
-    contact: "",
-  })
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Submit to support team
-    try {
-      const response = await fetch("https://formsubmit.co/ajax/support@liftloop.org", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          userAnswers,
-          _subject: "LiftLoop Major Support Request",
-          _template: "table",
-        }),
-      })
-
-      if (response.ok) {
-        alert("Your request has been submitted! Our support team will contact you within 24 hours.")
-        onClose()
-      }
-    } catch (error) {
-      alert("There was an error submitting your request. Please call 311 for immediate assistance.")
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">How urgent is your situation?</label>
-        <select
-          value={formData.urgency}
-          onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-          className="w-full p-2 border rounded-md"
-          required
-        >
-          <option value="">Select urgency level</option>
-          <option value="immediate">Immediate (today/tomorrow)</option>
-          <option value="this-week">This week</option>
-          <option value="this-month">This month</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Describe your situation</label>
-        <textarea
-          value={formData.situation}
-          onChange={(e) => setFormData({ ...formData, situation: e.target.value })}
-          className="w-full p-2 border rounded-md h-24"
-          placeholder="Tell us what's happening and what kind of help you need..."
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">What assistance would help most?</label>
-        <textarea
-          value={formData.assistance}
-          onChange={(e) => setFormData({ ...formData, assistance: e.target.value })}
-          className="w-full p-2 border rounded-md h-20"
-          placeholder="e.g., help paying rent, finding emergency shelter, job placement assistance..."
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Best way to contact you</label>
-        <input
-          type="text"
-          value={formData.contact}
-          onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-          className="w-full p-2 border rounded-md"
-          placeholder="Phone number or email"
-          required
-        />
-      </div>
-
-      <div className="flex space-x-2">
-        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-          Submit Request
-        </Button>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </form>
   )
 }
