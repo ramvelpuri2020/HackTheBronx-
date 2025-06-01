@@ -1,30 +1,86 @@
-# Use Next.js
+# Hack The Bronx 🌟
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+## What is Hack The Bronx?
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ramvelpuri2020s-projects/v0-use-next-js)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/c1HA4Uhv5Uv)
+Hack The Bronx is a community-driven web platform that helps connect people in the Bronx with local resources, events, and opportunities. Our goal is to make it easier for Bronx residents to:
+- Find and join community events
+- Access educational resources
+- Connect with local organizations
+- Share and discover community initiatives
+- Participate in local tech projects
 
-## Overview
+## Main Features
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+- 📱 Mobile-friendly interface
+- 🗺️ Interactive map of community resources
+- 📅 Community event calendar
+- 💬 Discussion forums
+- 📢 Local organization directory
+- 🤝 Volunteer opportunity listings
 
-## Deployment
+## How to Install and Run the App
 
-Your project is live at:
+### System Requirements
+- Node.js version 14 or higher
+- npm (comes with Node.js)
+- Git
 
-**[https://vercel.com/ramvelpuri2020s-projects/v0-use-next-js](https://vercel.com/ramvelpuri2020s-projects/v0-use-next-js)**
+### Step-by-Step Installation
 
-## Build your app
+1. Open your terminal/command prompt
 
-Continue building your app on:
+2. Clone the project to your computer:
+   ```sh
+   git clone https://github.com/yourusername/hack_the_bronx.git
+   cd hack_the_bronx
+   ```
 
-**[https://v0.dev/chat/projects/c1HA4Uhv5Uv](https://v0.dev/chat/projects/c1HA4Uhv5Uv)**
+3. Install the required packages:
+   ```sh
+   npm install
+   ```
 
-## How It Works
+4. Set up your environment:
+   - Create a new file called `.env` in the main folder
+   - Add these settings (replace with your actual values):
+   ```
+   MONGODB_URI=your_database_connection_string
+   API_KEY=your_api_key
+   ```
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+5. Start the app:
+   ```sh
+   npm run dev
+   ```
+
+6. Open your web browser and go to:
+   ```
+   http://localhost:3000
+   ```
+
+### Troubleshooting Common Issues
+
+- If you see "port already in use" error:
+  - Try using a different port: `npm run dev -- -p 3001`
+  
+- If packages aren't installing:
+  - Try deleting the `node_modules` folder and running `npm install` again
+  
+- If you get database connection errors:
+  - Double-check your `.env` file settings
+  - Make sure your database is running
+
+## Want to Help?
+
+We welcome contributions! If you'd like to help improve Hack The Bronx:
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b new-feature`)
+3. Make your changes
+4. Push to your branch (`git push origin new-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is under the MIT License - feel free to use, modify, and share! 
+Made with ❤️ for the Bronx community 
