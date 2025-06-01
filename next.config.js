@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable PWA features
-  experimental: {
-    webpackBuildWorker: true,
-  },
-  // Remove static export for Vercel deployment
+  reactStrictMode: true,
+  swcMinify: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
