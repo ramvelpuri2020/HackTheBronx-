@@ -4,9 +4,7 @@ const nextConfig = {
   experimental: {
     webpackBuildWorker: true,
   },
-  // Optimize for static export if needed
-  output: "export",
-  trailingSlash: true,
+  // Remove static export for Vercel deployment
   eslint: {
     ignoreDuringBuilds: true,
   },
