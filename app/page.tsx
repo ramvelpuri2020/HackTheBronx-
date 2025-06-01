@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-export default function Home() {
+export default function LandingPage() {
   const [isClient, setIsClient] = useState(false)
 
   // This ensures hydration issues are avoided
