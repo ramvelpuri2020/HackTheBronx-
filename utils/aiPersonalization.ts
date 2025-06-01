@@ -126,14 +126,12 @@ IMPORTANT CONSIDERATIONS:
 - Consider both short-term relief and long-term stability
 `
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const response = await fetch("https://ai.hackclub.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer sk-b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8",
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
         messages: [
           {
             role: "user",
@@ -150,6 +148,13 @@ IMPORTANT CONSIDERATIONS:
     }
 
     const data = await response.json()
+
+    // Check if the response has the expected structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected AI response structure:", data)
+      throw new Error("Invalid AI response structure")
+    }
+
     const aiResponse = data.choices[0].message.content
 
     // Parse the AI response
@@ -306,21 +311,30 @@ Respond in JSON format:
 }
 `
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const response = await fetch("https://ai.hackclub.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer sk-b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8",
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.8,
         max_tokens: 1500,
       }),
     })
 
+    if (!response.ok) {
+      throw new Error(`AI service error: ${response.status}`)
+    }
+
     const data = await response.json()
+
+    // Check if the response has the expected structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected AI response structure:", data)
+      throw new Error("Invalid AI response structure")
+    }
+
     const aiResponse = data.choices[0].message.content
 
     // Parse JSON response
@@ -331,42 +345,21 @@ Respond in JSON format:
     return JSON.parse(jsonString)
   } catch (error) {
     console.error("AI opportunity analysis error:", error)
+    return getFallbackOpportunities(userProfile)
+  }
+}
 
-    // Fallback based on user profile
-    const helpTypes = userProfile.answers[2] || []
-    const specialSituations = userProfile.answers[4] || []
-    const urgency = userProfile.answers[3]
-
-    return {
-      hiddenOpportunities: [
-        "SNAP benefits if not already enrolled",
-        helpTypes.includes("housing") ? "Emergency rental assistance programs" : "Utility assistance programs",
-        specialSituations.includes("children") ? "WIC program for families with children" : "Senior discount programs",
-        "Free tax preparation services",
-        "Medicaid enrollment assistance",
-      ],
-      qualifications: [
-        "Emergency assistance programs",
-        "Utility assistance programs",
-        helpTypes.includes("food") ? "Food stamp benefits" : "Housing voucher programs",
-        specialSituations.includes("veteran") ? "VA benefits and services" : "Community health programs",
-        "Free legal aid services",
-      ],
-      strategicAdvice: [
-        "Start with immediate needs first, then build toward long-term stability",
-        "Build relationships with case workers - they often know about additional resources",
-        "Apply for multiple programs simultaneously to maximize support",
-        "Keep all documentation organized for faster application processes",
-        "Ask every organization about other services and referrals",
-      ],
-      longTermPath: [
-        urgency === "immediate" ? "Stabilize immediate crisis situation" : "Address most urgent needs first",
-        "Secure stable housing and food security",
-        "Focus on income stability through employment or benefits",
-        "Build emergency savings and financial literacy",
-        "Develop long-term career or education goals",
-        "Give back to the community when stable",
-      ],
-    }
+function getFallbackOpportunities(userProfile: UserProfile): {
+  hiddenOpportunities: string[]
+  qualifications: string[]
+  strategicAdvice: string[]
+  longTermPath: string[]
+} {
+  // Placeholder implementation - replace with actual logic
+  return {
+    hiddenOpportunities: ["Placeholder opportunity 1", "Placeholder opportunity 2"],
+    qualifications: ["Placeholder qualification 1", "Placeholder qualification 2"],
+    strategicAdvice: ["Placeholder advice 1", "Placeholder advice 2"],
+    longTermPath: ["Placeholder path 1", "Placeholder path 2"],
   }
 }
